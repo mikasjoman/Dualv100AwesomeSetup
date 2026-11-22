@@ -13,7 +13,9 @@ Turning passively-cooled datacenter **NVIDIA Tesla V100 PCIe 32GB (`sm_70` Volta
 | **Idle GPU Power & Temp** | ~45–55W/card, 55°C+ | **~28–30W/card (135 MHz Eco Mode), 42–47°C** | Automatic 120s idle clock-down (`v100-thermal-guard.py`) |
 | **Sustained Load Temp** | 78°C–85°C+ (thermal throttling / loud fans) | **59°C–69°C** (+8°C to +18°C safety margin) | 150W–155W sweet-spot cap + **1380 MHz clock lock** + custom quiet duct |
 | **111GB MoE Model (`UD-Q4_K_XL`)** | Heavy UPI cross-socket bottleneck / OOM | **51.0 tok/s single** (56.6 peak) / **61.9 tok/s parallel** | Socket-1 NUMA binding + 40 GiB RAM resident expert cache + Batch MTP |
-| **64GB All-in-VRAM (`IQ3_S`)** | ~52.8 tok/s @ 74°C | **63.6 tok/s** (68.8 peak) @ 61–65°C | `spec=3` MTP draft decoding + `int8` KV cache (up to 131k context) |
+| **GPU 1 Thermal Balance (`UD-Q4_K_XL` vs `IQ3_XXS`)** | GPU 1 hits **66–74°C** @ ~130W (`IQ3_XXS`) | **GPU 1 drops to 50–61°C @ ~82W (-48W cooler!)** | Hybrid VRAM+RAM tiering shifts GPU 1 duty cycle, keeping the hotter PCIe slot **10–14°C cooler** while delivering 4-bit quality |
+| **64GB All-in-VRAM (`IQ3_XXS` / `IQ3_S`)** | ~52.8 tok/s @ 74°C | **63.6 tok/s** (68.8 peak) @ 61–65°C | `spec=3` MTP draft decoding + `int8` KV cache (up to 131k context) |
+| **CUDA 13 Cutoff Bypass (`sm_70` Port)** | Dropped in CUDA 13 (`CUBLAS_STATUS_ARCH_MISMATCH`) | **Full 2026 Strata feature parity on `engine-cuda12`** | CUDA 12.9 + `-DSTRATA_EXPERIMENTAL_SM60=ON` + custom Volta `mma.m8n8k4` Tensor Core kernels |
 | **Base System Idle (CPU + RAM)** | High dual-Xeon idle draw | **~24–28W CPU (both sockets) / ~45–55W wall** | `cpu-eco-profile.service` (`powersave` + `balance_performance` EPP) |
 
 ---
@@ -28,7 +30,7 @@ Turning passively-cooled datacenter **NVIDIA Tesla V100 PCIe 32GB (`sm_70` Volta
 
 ---
 
-## The 6 Core Optimizations (The Recipe)
+## The 7 Core Optimizations (The Recipe)
 
 ### 1. The Thermal Sweet Spot & Multi-Stage Hysteresis Watchdog (`daemons/v100-thermal-guard.py`)
 Passively cooled Tesla V100 cards inside a desktop workstation will rapidly hit 80°C+ at their default 250W TDP.
@@ -70,7 +72,15 @@ Environment="STRATA_MMQ_KQ=1"
 * **Speculative Decoding (`--spec 3 --spec-min-p 0.38 --batch-mtp`):** Lowering MTP speculation depth from 4 to **3** reduced rejected draft waste, running **both cooler and faster** (67.1% draft acceptance rate across parallel streams!).
 * **Per-Layer vs. Global Expert Cache:** Benchmarking proved that global `--expert-cache auto` with `--resident-budget-gib 40` and `--pipeline-windows 2 --lookup-chain 2` outperforms per-layer caching by **+15% tok/s** on MoE models.
 
-### 4. Protecting `/dev/shm` from Systemd SSH Logout Wipeout
+### 4. Why 111GB `UD-Q4_K_XL` Actually Runs Cooler Than 47GB `IQ3_XXS` (The Thermal Paradox)
+In a dual-slot workstation like the HP Z8 G4, **GPU 1 sits directly adjacent to GPU 0** and intakes warmer air, making **GPU 1 the thermal bottleneck** of the system.
+* **With `IQ3_XXS` (47 GB, 100% in VRAM):** Every routed expert lives in HBM2 across both cards. During sustained generation, GPU 1 draws **~130W continuously** and reaches **66°C–74°C** (leaving only 4°C–12°C margin before the 78°C throttle threshold).
+* **With Unsloth `UD-Q4_K_XL` (111 GB 4-bit, Hybrid VRAM + Pinned RAM):**
+  * Strata places **14,985 hot experts (~43.8 GiB)** in V100 HBM2 across both cards (**93.2%–97.3% VRAM hit rate**) and pins **31.67 GiB** of the remaining experts in Socket-1 DDR4 RAM (`--resident-budget-gib 40`), with GPU 0 also hosting the shared MTP draft layer (`STRATA_MTP_STAGE0=1`).
+  * Because stage hand-offs (`layers 0–21` on GPU 0 -> `layers 22–47` on GPU 1) pace GPU 1 alongside Socket-1 AVX-2/PCIe expert reads for the 3–7% cold tail, **GPU 1's average power draw drops from ~130W down to just 75W–85W** (~204W total dual-GPU draw vs. ~247W on `IQ3_XXS`).
+  * **Result:** You upgrade from 3-bit (`IQ3_XXS`) to near-lossless 4-bit/5-bit dynamic quantization (`UD-Q4_K_XL`, matching `Q8_0` top tokens **93.1%** of the time), retain **51.0 tok/s single-stream / 61.9 tok/s parallel**, and **drop GPU 1 peak temperatures by 10°C–14°C (down to 50°C–61°C)**!
+
+### 5. Protecting `/dev/shm` from Systemd SSH Logout Wipeout
 By default on Ubuntu/Debian/Fedora, `systemd-logind` has `RemoveIPC=yes` and `Linger=no`. Disconnecting an SSH session wipes shared memory segments in `/dev/shm`, crashing persistent vision encoders and IPC caches.
 ```bash
 sudo loginctl enable-linger $USER
@@ -79,18 +89,34 @@ echo -e "[Login]\nRemoveIPC=no" | sudo tee /etc/systemd/logind.conf.d/no-remove-
 sudo systemctl restart systemd-logind
 ```
 
-### 5. Compiling Vision Encoders for Volta `sm_70` (CUDA 12)
-Because CUDA 13+ drops Volta `sm_70` and prebuilt binaries frequently omit it, stay on the **CUDA 12 toolkit** and compile with explicit architecture targeting:
-```bash
-cmake -B build-vision -S tools/vision -G Ninja \
-      -DCMAKE_CUDA_ARCHITECTURES="70" \
-      -DCMAKE_BUILD_TYPE=Release \
-      -DGGML_CUDA=ON
-ninja -C build-vision strata-vision
-```
-And reserve `700–960 MiB` VRAM on GPU 0 (`--vram-reserve-mib 960`) so the vision projector (`mmproj-BF16.gguf`) never collides with the `int8` KV cache.
+### 6. Defeating the CUDA 13 Cutoff: The Volta `sm_70` Port (`engine-cuda12`)
+When NVIDIA released **CUDA 13.0**, they hard-removed Volta (`sm_70`), Pascal (`sm_6x`), and Maxwell (`sm_5x`) from `nvcc`, `ptxas`, and `libcublas.so.13` (raising the hard floor to Turing `sm_75`).
+* **Why PTX JIT workarounds fail on V100:** Community attempts to force CUDA 13 via PTX JIT (`-gencode arch=compute_70,code=compute_70` or patching `compute_75` headers) fail in production because Volta uses first-generation `mma.sync.aligned.m8n8k4` (`HMMA.884`) Tensor Core instructions (incompatible with Turing+ `mma.m16n8k8`), and CUDA 13's `cuBLAS` stripped all `sm_70` GEMM kernels (`CUBLAS_STATUS_ARCH_MISMATCH`).
+* **The Real Fix (`-DSTRATA_EXPERIMENTAL_SM60=ON` on CUDA 12.8/12.9):** Rather than losing new 2026 inference features, Strata maintains a dedicated **`engine-cuda12` architecture port** built from the exact same latest source tree using **CUDA 12.8/12.9** paired with the modern **NVIDIA R580+ driver**:
+  ```bash
+  # Build the main Strata engine with full Volta sm_70 Tensor Core backports
+  cmake -S engine -B build-cuda12 -G Ninja \
+        -DSTRATA_ENABLE_CUDA=ON \
+        -DSTRATA_BUILD_TESTS=OFF \
+        -DSTRATA_EXPERIMENTAL_SM60=ON \
+        -DCMAKE_CUDA_ARCHITECTURES="70" \
+        -DCMAKE_BUILD_TYPE=Release
+  ninja -C build-cuda12 strata
 
-### 6. Live Web Telemetry Dashboard & One-Click Power Cap Switcher (`daemons/hp-thermal-monitor.py`)
+  # Build the multimodal vision encoder (strata-vision) for Volta sm_70
+  cmake -B build-vision -S tools/vision -G Ninja \
+        -DCMAKE_CUDA_ARCHITECTURES="70" \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DGGML_CUDA=ON
+  ninja -C build-vision strata-vision
+  ```
+* **What `-DSTRATA_EXPERIMENTAL_SM60=ON` unlocks on V100:**
+  * Lowers the CMake & runtime floor from `sm_75` to `sm_60`/`sm_70`.
+  * Compiles `prompt_attn_v70_kernel` (native Volta `mma.m8n8k4` FP16 Tensor Core prompt attention, +18% prompt prefill speed).
+  * Automatically converts `BF16` projections (hyper-connection, router, QSA indexer) to run on Volta's `FP16` Tensor Cores (`s884` cuBLAS/CUTLASS) instead of falling back to slow `FP32` SIMT kernels.
+  * Reserve `576–960 MiB` VRAM on GPU 0 (`--vram-reserve-mib 960`) so the vision projector (`mmproj-BF16.gguf`) never collides with the `int8` KV cache.
+
+### 7. Live Web Telemetry Dashboard & One-Click Power Cap Switcher (`daemons/hp-thermal-monitor.py`)
 A zero-dependency Python web dashboard on port `9000` that monitors:
 * Real-time GPU 0 & GPU 1 temperatures, HBM2 VRAM usage, clocks, and power draw.
 * **Asymmetric GPU 1 Thermal Offset:** When switching power caps (`140W / 150W / 160W / 170W`) from the web UI, GPU 1 (which sits warmer in the chassis airflow) automatically receives a `-20W` offset to keep both cards at identical peak temperatures.
