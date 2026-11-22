@@ -110,9 +110,11 @@ In addition to the standard Volta `sm_70` flags, Strata `v0.2.19` introduces thr
 * `STRATA_MMQ_TIER_SORT=1`: Sorts prompt experts by readiness tier (HBM2 VRAM $\rightarrow$ Pinned RAM $\rightarrow$ File Stager) and hands hidden states between GPU 0 and GPU 1 via async P2P copies.
 * `STRATA_POOL_DEP=1`: Enables the per-expert CPU pool dependency queue.
 
-### D. Hardware BIOS Fan Floor (`25%` Minimum) for Passive V100s + NVMe Protection
-In the HP Z8 G4 BIOS (*Advanced $\rightarrow$ Thermal*), set **Increase Idle Fan Speed(%)** to **`25%`** (up from `20%`).
-* **Why:** The onboard M.2 NVMe PCIe controller sits directly in the PCIe airflow zone. At 20% fan speed during 40 GiB model loads, the bare NVMe ASIC controller (`Sensor 2`) can spike to `98.8°C` (thermal throttling). Bumping the BIOS idle fan floor to **25%** crosses the chassis static-pressure threshold, dropping the NVMe controller by **`-47.9°C`** (down to `50.9°C`) and allowing both V100s to cool down to **`38°C`** in Eco Idle mode.
+### D. Whisper-Quiet Cooling: 120mm Radial Fan at Only `25%` + Custom 3D-Printed Dual Fan Duct
+Passively cooled datacenter Tesla V100 heatsinks require static pressure, which normally means loud server fans. This setup runs **whisper-quiet and ice-cold (`38°C` idle, `52°C–55°C` under full dual-stream load)** using a **single 120mm radial blower fan running at only 25% speed**:
+* **3D-Printable Fan Duct Design (`.stl` & `.3mf`):** Available directly in the repository under **[`../hardware/fan-duct/`](../hardware/fan-duct/)** ([`v100-dual-duct-120mm-radial-fan-v2.stl`](../hardware/fan-duct/v100-dual-duct-120mm-radial-fan-v2.stl) and [`v100-fan-channel-hp-z8-g4-dual-card.3mf`](../hardware/fan-duct/v100-fan-channel-hp-z8-g4-dual-card.3mf)).
+* **BIOS Setting:** In the HP Z8 G4 BIOS (*Advanced $\rightarrow$ Thermal*), set **Increase Idle Fan Speed(%)** to **`25%`** (up from `20%`).
+* **Why 25% is the Magic Threshold:** Besides keeping both V100s at `38°C` idle and `52°C–55°C` under 87.5 tok/s load, the onboard M.2 NVMe PCIe controller sits in the same airflow zone. Bumping the fan floor from 20% to **25%** drops the NVMe ASIC controller (`Sensor 2`) by **`-47.9°C`** (from `98.8°C` down to `50.9°C`) while remaining whisper-quiet.
 
 ---
 

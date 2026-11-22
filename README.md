@@ -10,8 +10,8 @@ Turning passively-cooled datacenter **NVIDIA Tesla V100 PCIe 32GB (`sm_70` Volta
 
 | Metric | Stock / Unoptimized | With `Dualv100AwesomeSetup` | Why It Matters |
 | :--- | :--- | :--- | :--- |
-| **Idle GPU Power & Temp** | ~45–55W/card, 55°C+ | **~28–30W/card (135 MHz Eco Mode), 42–47°C** | Automatic 120s idle clock-down (`v100-thermal-guard.py`) |
-| **Sustained Load Temp** | 78°C–85°C+ (thermal throttling / loud fans) | **53°C–69°C** (+8°C to +24°C safety margin) | 140W–155W sweet-spot cap + **1380 MHz clock lock** + custom quiet duct |
+| **Idle GPU Power & Temp** | ~45–55W/card, 55°C+ | **~24–28W/card (135 MHz Eco Mode), 38–42°C** | Automatic 120s idle clock-down (`v100-thermal-guard.py`) + **120mm radial fan @ 25%** |
+| **Sustained Load Temp** | 78°C–85°C+ (thermal throttling / loud fans) | **52°C–55°C** (+23°C to +26°C safety margin!) | **120mm radial fan @ only 25%** + [Custom 3D-Printed Dual Fan Duct](hardware/fan-duct/) + 140W–150W cap |
 | **111GB MoE Model (`UD-Q4_K_XL`)** | Heavy UPI cross-socket bottleneck / OOM | **77.7 tok/s single** (84.4 decode peak) / **93.6 tok/s parallel** | Strata v0.2.19 (`0.1.65` `sm_70` port) + Socket-1 NUMA + 40 GiB RAM cache + Batch MTP |
 | **GPU 1 Thermal Balance (`UD-Q4_K_XL` vs `IQ3_XXS`)** | GPU 1 hits **66–74°C** @ ~130W (`IQ3_XXS`) | **GPU 1 drops to 52–61°C @ ~82–105W (up to 22°C cooler!)** | Hybrid VRAM+RAM tiering shifts GPU 1 duty cycle, keeping the hotter PCIe slot **14–22°C cooler** while delivering 4-bit quality |
 | **64GB All-in-VRAM (`IQ3_XXS` / `IQ3_S`)** | ~52.8 tok/s @ 74°C | **63.6 tok/s** (68.8 peak) @ 61–65°C | `spec=3` MTP draft decoding + `int8` KV cache (up to 131k context) |
@@ -26,6 +26,7 @@ Turning passively-cooled datacenter **NVIDIA Tesla V100 PCIe 32GB (`sm_70` Volta
 * **CPUs:** 2× Intel Xeon Gold 6140 @ 2.30 GHz (36 Physical Cores / 72 Threads, Dual-Socket LGA3647, 2 NUMA Nodes)
 * **Memory:** 64 GB ECC DDR4-2666 RDIMM (4× 16 GB, ~2.8–3.8W idle draw)
 * **Compute GPUs:** 2× **NVIDIA Tesla V100 PCIe 32GB** (64 GB total HBM2, Volta `sm_70`, PCIe 3.0 x16, both physically wired to **CPU Socket 1 / NUMA Node 1**)
+* **Cooling:** **Single 120mm Radial Blower Fan running at only 25% speed** (`Increase Idle Fan Speed(%) = 25` in HP BIOS) coupled to a **[Custom 3D-Printed Dual-V100 Fan Duct (`hardware/fan-duct/`)](hardware/fan-duct/)** — whisper-quiet (`38°C` idle, `52°C–55°C` under 80–93 tok/s inference!)
 * **Display GPU:** 1× NVIDIA GeForce GT 1030 2GB GDDR5 (PCIe 3.0 x4 — strictly isolated from compute via `CUDA_VISIBLE_DEVICES=0,1` and V100 name filtering)
 
 ---
@@ -149,6 +150,8 @@ Full benchmark progression across Strata `sm_70` engine versions, cooling duct r
 ```text
 Dualv100AwesomeSetup/
 ├── install.sh                         # One-step installer for OS tweaks, thermal guard & dashboard
+├── hardware/
+│   └── fan-duct/                      # 3D-printable STL & 3MF files for the 120mm radial fan dual-V100 duct (runs @ 25% fan speed!)
 ├── daemons/
 │   ├── v100-thermal-guard.py          # Dynamic Eco Idle (135MHz) + 1380MHz lock + 3-stage thermal guard
 │   └── hp-thermal-monitor.py          # Port 9000 live web telemetry dashboard & power-cap switcher
