@@ -11,9 +11,9 @@ Turning passively-cooled datacenter **NVIDIA Tesla V100 PCIe 32GB (`sm_70` Volta
 | Metric | Stock / Unoptimized | With `Dualv100AwesomeSetup` | Why It Matters |
 | :--- | :--- | :--- | :--- |
 | **Idle GPU Power & Temp** | ~45–55W/card, 55°C+ | **~28–30W/card (135 MHz Eco Mode), 42–47°C** | Automatic 120s idle clock-down (`v100-thermal-guard.py`) |
-| **Sustained Load Temp** | 78°C–85°C+ (thermal throttling / loud fans) | **59°C–69°C** (+8°C to +18°C safety margin) | 150W–155W sweet-spot cap + **1380 MHz clock lock** + custom quiet duct |
-| **111GB MoE Model (`UD-Q4_K_XL`)** | Heavy UPI cross-socket bottleneck / OOM | **51.0 tok/s single** (56.6 peak) / **61.9 tok/s parallel** | Socket-1 NUMA binding + 40 GiB RAM resident expert cache + Batch MTP |
-| **GPU 1 Thermal Balance (`UD-Q4_K_XL` vs `IQ3_XXS`)** | GPU 1 hits **66–74°C** @ ~130W (`IQ3_XXS`) | **GPU 1 drops to 50–61°C @ ~82W (-48W cooler!)** | Hybrid VRAM+RAM tiering shifts GPU 1 duty cycle, keeping the hotter PCIe slot **10–14°C cooler** while delivering 4-bit quality |
+| **Sustained Load Temp** | 78°C–85°C+ (thermal throttling / loud fans) | **53°C–69°C** (+8°C to +24°C safety margin) | 140W–155W sweet-spot cap + **1380 MHz clock lock** + custom quiet duct |
+| **111GB MoE Model (`UD-Q4_K_XL`)** | Heavy UPI cross-socket bottleneck / OOM | **77.7 tok/s single** (84.4 decode peak) / **93.6 tok/s parallel** | Strata v0.2.19 (`0.1.65` `sm_70` port) + Socket-1 NUMA + 40 GiB RAM cache + Batch MTP |
+| **GPU 1 Thermal Balance (`UD-Q4_K_XL` vs `IQ3_XXS`)** | GPU 1 hits **66–74°C** @ ~130W (`IQ3_XXS`) | **GPU 1 drops to 52–61°C @ ~82–105W (up to 22°C cooler!)** | Hybrid VRAM+RAM tiering shifts GPU 1 duty cycle, keeping the hotter PCIe slot **14–22°C cooler** while delivering 4-bit quality |
 | **64GB All-in-VRAM (`IQ3_XXS` / `IQ3_S`)** | ~52.8 tok/s @ 74°C | **63.6 tok/s** (68.8 peak) @ 61–65°C | `spec=3` MTP draft decoding + `int8` KV cache (up to 131k context) |
 | **CUDA 13 Cutoff Bypass (`sm_70` Port)** | Dropped in CUDA 13 (`CUBLAS_STATUS_ARCH_MISMATCH`) | **Full 2026 Strata feature parity on `engine-cuda12`** | CUDA 12.9 + `-DSTRATA_EXPERIMENTAL_SM60=ON` + custom Volta `mma.m8n8k4` Tensor Core kernels |
 | **Base System Idle (CPU + RAM)** | High dual-Xeon idle draw | **~24–28W CPU (both sockets) / ~45–55W wall** | `cpu-eco-profile.service` (`powersave` + `balance_performance` EPP) |
@@ -78,7 +78,7 @@ In a dual-slot workstation like the HP Z8 G4, **GPU 1 sits directly adjacent to 
 * **With Unsloth `UD-Q4_K_XL` (111 GB 4-bit, Hybrid VRAM + Pinned RAM):**
   * Strata places **14,985 hot experts (~43.8 GiB)** in V100 HBM2 across both cards (**93.2%–97.3% VRAM hit rate**) and pins **31.67 GiB** of the remaining experts in Socket-1 DDR4 RAM (`--resident-budget-gib 40`), with GPU 0 also hosting the shared MTP draft layer (`STRATA_MTP_STAGE0=1`).
   * Because stage hand-offs (`layers 0–21` on GPU 0 -> `layers 22–47` on GPU 1) pace GPU 1 alongside Socket-1 AVX-2/PCIe expert reads for the 3–7% cold tail, **GPU 1's average power draw drops from ~130W down to just 75W–85W** (~204W total dual-GPU draw vs. ~247W on `IQ3_XXS`).
-  * **Result:** You upgrade from 3-bit (`IQ3_XXS`) to near-lossless 4-bit/5-bit dynamic quantization (`UD-Q4_K_XL`, matching `Q8_0` top tokens **93.1%** of the time), retain **51.0 tok/s single-stream / 61.9 tok/s parallel**, and **drop GPU 1 peak temperatures by 10°C–14°C (down to 50°C–61°C)**!
+  * **Result:** You upgrade from 3-bit (`IQ3_XXS`) to near-lossless 4-bit/5-bit dynamic quantization (`UD-Q4_K_XL`, matching `Q8_0` top tokens **93.1%** of the time), achieve **77.7–82.0 tok/s single-stream (84.4 tok/s decode peak) / 93.6 tok/s parallel decode (87.5–90.0 tok/s E2E)** on Strata v0.2.19 (`0.1.65`), and **drop GPU 1 peak temperatures by 14°C–22°C (down to 52°C–61°C)**!
 
 ### 5. Protecting `/dev/shm` from Systemd SSH Logout Wipeout
 By default on Ubuntu/Debian/Fedora, `systemd-logind` has `RemoveIPC=yes` and `Linger=no`. Disconnecting an SSH session wipes shared memory segments in `/dev/shm`, crashing persistent vision encoders and IPC caches.
@@ -139,6 +139,8 @@ Full benchmark progression across cooling duct revisions, power caps, NUMA pinni
 | Oct 26 | 150W/150W, NUMA1 + 3072 chunk | `qwen3.8-flash-next-ud-q4_k_xl` (111GB) | 44.1 tok/s (46.9 peak) | 59.0°C | 52.0°C | ~130W / ~95W | Socket 1 NUMA pin + 3072 prefill chunking |
 | Nov 05 | 150W/150W, `--adapt-async 1 --batch-mtp` | `qwen3.8-flash-next-ud-q4_k_xl` (111GB) | **51.0 tok/s (56.6 peak)** | 69.0°C | 61.0°C | 122.4W / 81.9W | Single-stream with async expert adaptation |
 | Nov 05 | 150W/150W, **2× Concurrent Streams** | `qwen3.8-flash-next-ud-q4_k_xl` (111GB) | **61.9 tok/s agg (64.6 peak)** | 70.0°C | 61.0°C | ~130W / ~85W | 31.1 tok/s per stream, 67.1% MTP draft accept |
+| Nov 22 | 140W/140W, Strata v0.2.19 (`0.1.65` `sm_70` port) | `qwen3.8-flash-next-ud-q4_k_xl` (111GB) | **77.7 tok/s avg (82.0 E2E / 84.4 decode peak)** | **53.0°C** | **52.0°C** | 129.6W / 105.6W | Native K-quant kernels + `STRATA_AUX_CPUS=auto`, 97.3–98.4% VRAM hit, **0 MB SSD reads** |
+| Nov 22 | 140W/140W, **2× Concurrent Streams** (`0.1.65`) | `qwen3.8-flash-next-ud-q4_k_xl` (111GB) | **87.5 tok/s agg E2E (90.0 E2E / 93.6 decode peak)** | **54.0°C** | **55.0°C** | 102.0W / 104.2W | **46.8 tok/s decode per stream**, **70.5% MTP draft accept** (92.1 rows/s), **99.9–100% VRAM hit** |
 
 ---
 
