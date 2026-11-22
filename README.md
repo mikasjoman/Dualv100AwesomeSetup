@@ -136,6 +136,7 @@ Full benchmark progression across Strata `sm_70` engine versions, cooling duct r
 | **2026-11-05** | 150W/150W, Strata v0.2.10 (`0.1.56`, `--adapt-async 1 --batch-mtp`) | `qwen3.8-flash-next-ud-q4_k_xl` (111GB) | **61.9 tok/s parallel (64.6 peak)** / **51.0 tok/s single (56.6 peak)** | 70.0°C | 61.0°C | 122.4W / 81.9W | Async expert adaptation + 2 parallel streams (31.1 tok/s per stream, 67.1% MTP draft accept) |
 | **2026-10-26** | 150W/150W, NUMA Node 1 + Volta-Opt + 3072 Prefill Chunk | `qwen3.8-flash-next-ud-q4_k_xl` (111GB) | **44.1 tok/s avg (46.9 peak)** | 59.0°C | 52.0°C | ~130W / ~95W | First 111GB Unsloth Q4 run with Socket-1 NUMA pin + 40GB RAM budget + `STRATA_SM70_TABLE=1` |
 | **2026-10-25** | 170W Cap, `spec=3`, New Quiet Duct | `qwen3.8-flash-next-iq3_xxs` (47GB) | **63.6 tok/s avg (68.8 peak)** | 61.0°C | 65.0°C | ~128W avg | Best all-in-VRAM 64GB profile: redesigned quiet duct + MTP `spec=3` cut temps from 74°C -> 65°C |
+| **2026-10-25 (Baseline)** | 160W Cap (Original Duct) | `qwen3.8-flash-next-iq3_xxs` (47GB) | **~52.8 tok/s** | 68.0°C | 74.0°C | ~140W total | Initial Day-1 baseline before quiet 120mm radial duct, `spec=3`, and Volta tuning |
 
 ---
 
