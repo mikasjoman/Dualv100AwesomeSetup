@@ -1,0 +1,11 @@
+[Unit]
+Description=Set Intel CPU Energy Profile for Eco Idle and Dynamic Boost
+After=sysinit.target local-fs.target
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh -c 'for e in /sys/devices/system/cpu/cpufreq/policy*/energy_performance_preference; do echo balance_performance > "$e" 2>/dev/null || true; done; for g in /sys/devices/system/cpu/cpufreq/policy*/scaling_governor; do echo powersave > "$g" 2>/dev/null || true; done'
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

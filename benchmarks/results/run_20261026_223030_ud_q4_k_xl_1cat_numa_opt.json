@@ -1,0 +1,20 @@
+{
+  "timestamp": "2026-10-26 22:30:30",
+  "model": "qwen3.8-flash-next-ud-q4_k_xl",
+  "profile": "150W/150W Cap, NUMA Node 1 Preferred, 1Cat Chunking & SM70 opt, spec=3 (p=0.38)",
+  "iterations": 5,
+  "total_tokens": 5862,
+  "total_time_s": 132.79999999999998,
+  "tok_per_sec_rounds": [
+    38.9,
+    46.0,
+    43.9,
+    46.0,
+    46.9
+  ],
+  "avg_tok_s": 44.14,
+  "peak_tok_s": 46.9,
+  "gpu0_peak_temp": 59.0,
+  "gpu1_peak_temp": 52.0,
+  "margin_to_safety_77c": 18.0
+}

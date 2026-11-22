@@ -1,0 +1,36 @@
+[Unit]
+Description=Strata AI Server (Dual Tesla V100 64GB)
+After=network-online.target v100-thermal-guard.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=user
+WorkingDirectory=/home/user/strata
+ExecStart=/usr/bin/numactl --cpunodebind=1 --preferred=1 /home/user/strata/.venv/bin/python /home/user/strata/serve/server.py --engine strata --config /home/user/strata/strata-iq3_xxs.json --port 8086
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+LimitNOFILE=65536
+Environment="CUDA_VISIBLE_DEVICES=0,1"
+Environment="STRATA_SM70_TABLE=1"
+Environment="STRATA_PF_WMMA=1"
+Environment="STRATA_PF_WMMA2=1"
+Environment="STRATA_HC_Q8=1"
+Environment="STRATA_MTP_STAGE0=1"
+Environment="STRATA_ARGMAX_ROWS_SM70=1"
+Environment="STRATA_GR_NORM_FAST=1"
+Environment="STRATA_GDN_REC_WARP=2"
+Environment="STRATA_PREFILL_CHUNK=3072"
+Environment="STRATA_CUDA_MALLOC_ASYNC=1"
+Environment="STRATA_SM70_GEMM_SPLIT=1"
+Environment="STRATA_BATCH_ATTN_ROWS=1"
+Environment="STRATA_BATCH_GDN_GROUPS=1"
+Environment="STRATA_BATCH_MTP_SERIAL=1"
+Environment="STRATA_PW_WITH_BATCH=1"
+Environment="STRATA_ADMIT_SHORT_FIRST=2048"
+Environment="STRATA_MMQ_KQ=1"
+
+[Install]
+WantedBy=multi-user.target

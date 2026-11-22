@@ -1,0 +1,15 @@
+[Unit]
+Description=HP Z8 G4 Live Thermal and Power Web Dashboard
+After=network.target
+
+[Service]
+Type=simple
+User=root
+ExecStart=/usr/bin/python3 /usr/local/bin/hp-thermal-monitor.py
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

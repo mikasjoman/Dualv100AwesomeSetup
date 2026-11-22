@@ -1,0 +1,22 @@
+{
+  "timestamp": "20261026_211849",
+  "config_summary": "Unsloth UD-Q4_K_XL (111GB): 150W/120W Cap + spec=3 + Volta SM70 Optimized + 40GB RAM budget",
+  "model": "qwen3.8-flash-next-ud-q4_k_xl",
+  "total_tokens": 5825,
+  "avg_decode_tok_s": 43.1,
+  "rounds": [
+    {"round": 1, "tokens": 1167, "time": 25.5, "tok_s": 45.7},
+    {"round": 2, "tokens": 1163, "time": 28.5, "tok_s": 40.8},
+    {"round": 3, "tokens": 1164, "time": 27.6, "tok_s": 42.2},
+    {"round": 4, "tokens": 1167, "time": 26.8, "tok_s": 43.6},
+    {"round": 5, "tokens": 1164, "time": 26.8, "tok_s": 43.4}
+  ],
+  "gpu_stats": {
+    "0": {"max_temp": 59.0, "end_temp": 57.0},
+    "1": {"max_temp": 50.0, "end_temp": 49.0}
+  },
+  "cache_stats": {
+    "decode_expert_cache_hit_rate": "96.3% - 96.9%",
+    "nvme_disk_reads_mb": 0.0
+  }
+}

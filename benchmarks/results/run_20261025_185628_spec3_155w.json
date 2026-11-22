@@ -1,0 +1,63 @@
+{
+  "timestamp": "20261025_185628",
+  "spec": 3,
+  "power_cap": 155,
+  "total_time_s": 47.72,
+  "total_tokens": 2991,
+  "avg_decode_tok_s": 62.89,
+  "overall_tok_per_sec": 62.68,
+  "rounds": [
+    {
+      "round": 1,
+      "time": 8.78,
+      "ttft": 0.016,
+      "tokens": 598,
+      "pure_decode_tok_s": 68.11,
+      "overall_tok_s": 68.09
+    },
+    {
+      "round": 2,
+      "time": 9.68,
+      "ttft": 0.003,
+      "tokens": 599,
+      "pure_decode_tok_s": 61.76,
+      "overall_tok_s": 61.85
+    },
+    {
+      "round": 3,
+      "time": 10.42,
+      "ttft": 0.003,
+      "tokens": 598,
+      "pure_decode_tok_s": 57.3,
+      "overall_tok_s": 57.38
+    },
+    {
+      "round": 4,
+      "time": 9.94,
+      "ttft": 0.003,
+      "tokens": 598,
+      "pure_decode_tok_s": 60.1,
+      "overall_tok_s": 60.18
+    },
+    {
+      "round": 5,
+      "time": 8.89,
+      "ttft": 0.002,
+      "tokens": 598,
+      "pure_decode_tok_s": 67.17,
+      "overall_tok_s": 67.27
+    }
+  ],
+  "gpu_stats": {
+    "0": {
+      "max_temp": 61.0,
+      "max_power": 165.39,
+      "avg_power": 114.2
+    },
+    "1": {
+      "max_temp": 66.0,
+      "max_power": 178.75,
+      "avg_power": 130.2
+    }
+  }
+}
