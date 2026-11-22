@@ -31,6 +31,10 @@ Environment="STRATA_BATCH_MTP_SERIAL=1"
 Environment="STRATA_PW_WITH_BATCH=1"
 Environment="STRATA_ADMIT_SHORT_FIRST=2048"
 Environment="STRATA_MMQ_KQ=1"
+Environment="STRATA_AUX_CPUS=auto"
+Environment="STRATA_MMQ_TIER_SORT=1"
+Environment="STRATA_SPLIT_CPU_SHARE=1"
+Environment="STRATA_POOL_DEP=1"
 
 [Install]
 WantedBy=multi-user.target

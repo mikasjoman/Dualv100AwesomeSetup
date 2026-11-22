@@ -41,6 +41,8 @@
     "auto",
     "--batch-mtp",
     "--adapt-async",
+    "1",
+    "--conversation-cache-rewind-keep",
     "1"
   ],
   "cwd": "/home/user/strata",
@@ -63,7 +65,7 @@
   "open_browser": false,
   "fit_max_tokens": true,
   "reasoning_close_retry": true,
-  "reasoning_budget_tokens": 8192,
+  "reasoning_budget_tokens": 4096,
   "tool_call_recovery": true,
   "vision": {
     "exe": "/home/user/strata/engine-cuda12/strata-vision",

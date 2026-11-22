@@ -169,6 +169,7 @@ Dualv100AwesomeSetup/
 │   ├── gpu_test_dual.py               # Dual-V100 raw compute stress test
 │   └── results/                       # Raw JSON telemetry from benchmark runs
 └── docs/
+    ├── STRATA_AND_HERMES_SETUP.md      # Complete English guide: Strata v0.2.19 + Hermes Agent dual-node batching & subagents
     ├── STRATA_AND_OPENCLAW_GUIDE_SV.md # Full Swedish postmortem & step-by-step installation manual
     └── BENCHMARKS_SV.md                # Full Swedish benchmark log table
 ```
