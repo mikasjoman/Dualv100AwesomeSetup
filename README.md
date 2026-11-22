@@ -125,22 +125,22 @@ A zero-dependency Python web dashboard on port `9000` that monitors:
 
 ---
 
-## Benchmark Progression Log
+## Benchmark Progression Log (Most Recent First)
 
-Full benchmark progression across cooling duct revisions, power caps, NUMA pinning, and Volta kernel flags:
+Full benchmark progression across Strata `sm_70` engine versions, cooling duct revisions, power caps, NUMA pinning, and Volta kernel flags:
 
 | Date | Profile / Power Cap | Model | Avg Throughput | GPU 0 Peak | GPU 1 Peak | Avg Power (GPU 0 / 1) | Notes |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| Oct 25 (Baseline) | 160W Cap (Old Duct) | `qwen3.8-flash-next-iq3_xxs` | ~52.8 tok/s | 68.0°C | 74.0°C | ~140W total | Original duct, loud fan curve |
-| Oct 25 | 150W Cap (New Quiet Duct) | `qwen3.8-flash-next-iq3_xxs` | 59.3 tok/s | 59.0°C | 64.0°C | ~112W total | Redesigned quiet duct (-10°C cooler!) |
-| Oct 25 | 155W Cap, `spec=3` | `qwen3.8-flash-next-iq3_xxs` | 62.9 tok/s (68.1 peak) | 61.0°C | 66.0°C | 114.2W / 130.2W | Lowering MTP spec 4 -> 3 = faster & cooler |
-| Oct 25 | 170W Cap, `spec=3` | `qwen3.8-flash-next-iq3_xxs` | **63.6 tok/s (68.8 peak)** | 61.0°C | 65.0°C | ~128W avg | Optimal all-in-VRAM 64GB profile |
-| Oct 26 | 150W/120W, Volta-Opt | `qwen3.8-flash-next-ud-q4_k_xl` (111GB) | 43.1 tok/s (45.7 peak) | 59.0°C | 50.0°C | ~125W / ~75W | 111GB Unsloth Q4 + 40GB RAM budget + `SM70` flags |
-| Oct 26 | 150W/150W, NUMA1 + 3072 chunk | `qwen3.8-flash-next-ud-q4_k_xl` (111GB) | 44.1 tok/s (46.9 peak) | 59.0°C | 52.0°C | ~130W / ~95W | Socket 1 NUMA pin + 3072 prefill chunking |
-| Nov 05 | 150W/150W, `--adapt-async 1 --batch-mtp` | `qwen3.8-flash-next-ud-q4_k_xl` (111GB) | **51.0 tok/s (56.6 peak)** | 69.0°C | 61.0°C | 122.4W / 81.9W | Single-stream with async expert adaptation |
+| **Nov 22** | **140W/140W, 2× Concurrent Streams (`0.1.65`)** | **`qwen3.8-flash-next-ud-q4_k_xl` (111GB)** | **87.5 tok/s agg E2E (90.0 E2E / 93.6 decode peak)** | **54.0°C** | **55.0°C** | **102.0W / 104.2W** | **46.8 tok/s decode per stream**, **70.5% MTP draft accept** (92.1 rows/s), **99.9–100% VRAM hit** |
+| **Nov 22** | **140W/140W, Strata v0.2.19 (`0.1.65` `sm_70` port)** | **`qwen3.8-flash-next-ud-q4_k_xl` (111GB)** | **77.7 tok/s avg (82.0 E2E / 84.4 decode peak)** | **53.0°C** | **52.0°C** | **129.6W / 105.6W** | Native K-quant kernels + `STRATA_AUX_CPUS=auto`, 97.3–98.4% VRAM hit, **0 MB SSD reads** |
 | Nov 05 | 150W/150W, **2× Concurrent Streams** | `qwen3.8-flash-next-ud-q4_k_xl` (111GB) | **61.9 tok/s agg (64.6 peak)** | 70.0°C | 61.0°C | ~130W / ~85W | 31.1 tok/s per stream, 67.1% MTP draft accept |
-| Nov 22 | 140W/140W, Strata v0.2.19 (`0.1.65` `sm_70` port) | `qwen3.8-flash-next-ud-q4_k_xl` (111GB) | **77.7 tok/s avg (82.0 E2E / 84.4 decode peak)** | **53.0°C** | **52.0°C** | 129.6W / 105.6W | Native K-quant kernels + `STRATA_AUX_CPUS=auto`, 97.3–98.4% VRAM hit, **0 MB SSD reads** |
-| Nov 22 | 140W/140W, **2× Concurrent Streams** (`0.1.65`) | `qwen3.8-flash-next-ud-q4_k_xl` (111GB) | **87.5 tok/s agg E2E (90.0 E2E / 93.6 decode peak)** | **54.0°C** | **55.0°C** | 102.0W / 104.2W | **46.8 tok/s decode per stream**, **70.5% MTP draft accept** (92.1 rows/s), **99.9–100% VRAM hit** |
+| Nov 05 | 150W/150W, `--adapt-async 1 --batch-mtp` | `qwen3.8-flash-next-ud-q4_k_xl` (111GB) | **51.0 tok/s (56.6 peak)** | 69.0°C | 61.0°C | 122.4W / 81.9W | Single-stream with async expert adaptation |
+| Oct 26 | 150W/150W, NUMA1 + 3072 chunk | `qwen3.8-flash-next-ud-q4_k_xl` (111GB) | 44.1 tok/s (46.9 peak) | 59.0°C | 52.0°C | ~130W / ~95W | Socket 1 NUMA pin + 3072 prefill chunking |
+| Oct 26 | 150W/120W, Volta-Opt | `qwen3.8-flash-next-ud-q4_k_xl` (111GB) | 43.1 tok/s (45.7 peak) | 59.0°C | 50.0°C | ~125W / ~75W | 111GB Unsloth Q4 + 40GB RAM budget + `SM70` flags |
+| Oct 25 | 170W Cap, `spec=3` | `qwen3.8-flash-next-iq3_xxs` | **63.6 tok/s (68.8 peak)** | 61.0°C | 65.0°C | ~128W avg | Optimal all-in-VRAM 64GB profile |
+| Oct 25 | 155W Cap, `spec=3` | `qwen3.8-flash-next-iq3_xxs` | 62.9 tok/s (68.1 peak) | 61.0°C | 66.0°C | 114.2W / 130.2W | Lowering MTP spec 4 -> 3 = faster & cooler |
+| Oct 25 | 150W Cap (New Quiet Duct) | `qwen3.8-flash-next-iq3_xxs` | 59.3 tok/s | 59.0°C | 64.0°C | ~112W total | Redesigned quiet duct (-10°C cooler!) |
+| Oct 25 (Baseline) | 160W Cap (Old Duct) | `qwen3.8-flash-next-iq3_xxs` | ~52.8 tok/s | 68.0°C | 74.0°C | ~140W total | Original duct, loud fan curve |
 
 ---
 
