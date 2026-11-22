@@ -1,140 +1,135 @@
 {
-  "timestamp": "2026-11-22T12:51:02.143237",
-  "engine_version": "Strata v0.2.19 (engine-cuda12 0.1.65, Volta sm_70 port)",
+  "timestamp": "2026-11-22T13:20:09.473370",
+  "engine_version": "Strata v0.2.19 (engine-cuda12 0.1.65, Volta sm_70 port + SPLIT_CPU_SHARE + MMQ_TIER_SORT + 120mm Radial Fan @ 25%)",
   "model": "qwen3.8-flash-next-ud-q4_k_xl",
   "single_stream": {
-    "avg_decode_tps": 81.28,
-    "peak_decode_tps": 84.38,
-    "avg_e2e_tps": 68.38,
-    "peak_e2e_tps": 73.9,
+    "avg_decode_tps": 74.85,
+    "peak_decode_tps": 82.88,
+    "avg_e2e_tps": 66.88,
+    "peak_e2e_tps": 77.12,
     "rounds": [
       {
-        "conv_id": "bench-solo-1795348210-1",
-        "tokens": 570,
-        "ttft_s": 2.11,
-        "decode_s": 6.966,
-        "total_s": 9.076,
-        "e2e_tps": 62.8,
-        "decode_tps": 81.83,
-        "draft_accept_pct": 0.0
+        "conv_id": "bench-solo-1795349955-1",
+        "tokens": 577,
+        "ttft_s": 2.405,
+        "decode_s": 9.085,
+        "total_s": 11.49,
+        "e2e_tps": 50.22,
+        "decode_tps": 63.51
       },
       {
-        "conv_id": "bench-solo-1795348219-2",
-        "tokens": 570,
-        "ttft_s": 0.958,
-        "decode_s": 6.755,
-        "total_s": 7.713,
-        "e2e_tps": 73.9,
-        "decode_tps": 84.38,
-        "draft_accept_pct": 0.0
+        "conv_id": "bench-solo-1795349955-2",
+        "tokens": 574,
+        "ttft_s": 0.486,
+        "decode_s": 7.344,
+        "total_s": 7.83,
+        "e2e_tps": 73.31,
+        "decode_tps": 78.16
       },
       {
-        "conv_id": "bench-solo-1795348227-3",
-        "tokens": 592,
-        "ttft_s": 1.025,
-        "decode_s": 7.625,
-        "total_s": 8.65,
-        "e2e_tps": 68.44,
-        "decode_tps": 77.64,
-        "draft_accept_pct": 0.0
+        "conv_id": "bench-solo-1795349955-3",
+        "tokens": 567,
+        "ttft_s": 0.511,
+        "decode_s": 6.841,
+        "total_s": 7.353,
+        "e2e_tps": 77.12,
+        "decode_tps": 82.88
       }
     ],
     "telemetry": {
-      "gpu0_peak_temp_c": 53.0,
-      "gpu1_peak_temp_c": 52.0,
-      "gpu0_avg_temp_c": 50.9,
-      "gpu1_avg_temp_c": 50.6,
-      "gpu0_avg_pwr_w": 129.6,
-      "gpu1_avg_pwr_w": 105.6,
+      "gpu0_peak_temp_c": 46.0,
+      "gpu1_peak_temp_c": 45.0,
+      "gpu0_avg_temp_c": 42.7,
+      "gpu1_avg_temp_c": 41.5,
+      "gpu0_avg_pwr_w": 131.6,
+      "gpu1_avg_pwr_w": 90.8,
       "gpu0_limit_w": 140.0,
       "gpu1_limit_w": 140.0,
-      "samples_count": 16
+      "samples_count": 13
     }
   },
   "parallel_2x": {
-    "avg_aggregate_e2e_tps": 87.45,
-    "peak_aggregate_e2e_tps": 90.01,
-    "avg_aggregate_decode_tps": 93.56,
-    "peak_aggregate_decode_tps": 93.63,
+    "avg_aggregate_e2e_tps": 85.72,
+    "peak_aggregate_e2e_tps": 87.11,
+    "avg_aggregate_decode_tps": 89.94,
+    "peak_aggregate_decode_tps": 90.06,
     "rounds": [
       {
         "round": 1,
-        "wall_s": 13.62,
-        "total_tokens": 1156,
-        "aggregate_e2e_tps": 84.89,
-        "aggregate_decode_tps": 93.5,
-        "draft_accept_pct": 0.0,
+        "wall_s": 13.7,
+        "total_tokens": 1155,
+        "aggregate_e2e_tps": 84.33,
+        "aggregate_decode_tps": 90.06,
         "streams": [
           {
-            "conv_id": "bench-parA-1795348235-1",
-            "tokens": 576,
-            "ttft_s": 1.087,
-            "decode_s": 12.276,
-            "total_s": 13.363,
-            "e2e_tps": 43.1,
-            "decode_tps": 46.92
+            "conv_id": "bench-parA-1795349955-1",
+            "tokens": 578,
+            "ttft_s": 1.093,
+            "decode_s": 12.474,
+            "total_s": 13.567,
+            "e2e_tps": 42.6,
+            "decode_tps": 46.34
           },
           {
-            "conv_id": "bench-parB-1795348235-1",
-            "tokens": 580,
-            "ttft_s": 1.165,
-            "decode_s": 12.45,
-            "total_s": 13.615,
-            "e2e_tps": 42.6,
-            "decode_tps": 46.58
+            "conv_id": "bench-parB-1795349955-1",
+            "tokens": 577,
+            "ttft_s": 0.496,
+            "decode_s": 13.199,
+            "total_s": 13.695,
+            "e2e_tps": 42.13,
+            "decode_tps": 43.72
           }
         ]
       },
       {
         "round": 2,
-        "wall_s": 12.78,
+        "wall_s": 13.2,
         "total_tokens": 1150,
-        "aggregate_e2e_tps": 90.01,
-        "aggregate_decode_tps": 93.63,
-        "draft_accept_pct": 0.0,
+        "aggregate_e2e_tps": 87.11,
+        "aggregate_decode_tps": 89.83,
         "streams": [
           {
-            "conv_id": "bench-parA-1795348249-2",
-            "tokens": 571,
-            "ttft_s": 0.541,
-            "decode_s": 12.235,
-            "total_s": 12.777,
-            "e2e_tps": 44.69,
-            "decode_tps": 46.67
+            "conv_id": "bench-parA-1795349955-2",
+            "tokens": 573,
+            "ttft_s": 0.186,
+            "decode_s": 12.769,
+            "total_s": 12.955,
+            "e2e_tps": 44.23,
+            "decode_tps": 44.87
           },
           {
-            "conv_id": "bench-parB-1795348249-2",
-            "tokens": 579,
-            "ttft_s": 0.323,
-            "decode_s": 12.33,
-            "total_s": 12.653,
-            "e2e_tps": 45.76,
-            "decode_tps": 46.96
+            "conv_id": "bench-parB-1795349955-2",
+            "tokens": 577,
+            "ttft_s": 0.368,
+            "decode_s": 12.834,
+            "total_s": 13.202,
+            "e2e_tps": 43.71,
+            "decode_tps": 44.96
           }
         ]
       }
     ],
     "telemetry": {
-      "gpu0_peak_temp_c": 54.0,
-      "gpu1_peak_temp_c": 55.0,
-      "gpu0_avg_temp_c": 53.1,
-      "gpu1_avg_temp_c": 54.1,
-      "gpu0_avg_pwr_w": 102.0,
-      "gpu1_avg_pwr_w": 104.2,
+      "gpu0_peak_temp_c": 48.0,
+      "gpu1_peak_temp_c": 49.0,
+      "gpu0_avg_temp_c": 46.4,
+      "gpu1_avg_temp_c": 46.4,
+      "gpu0_avg_pwr_w": 98.6,
+      "gpu1_avg_pwr_w": 96.8,
       "gpu0_limit_w": 140.0,
       "gpu1_limit_w": 140.0,
-      "samples_count": 18
+      "samples_count": 14
     }
   },
   "overall_telemetry": {
-    "gpu0_peak_temp_c": 54.0,
-    "gpu1_peak_temp_c": 55.0,
-    "gpu0_avg_temp_c": 52.1,
-    "gpu1_avg_temp_c": 52.4,
-    "gpu0_avg_pwr_w": 115.0,
-    "gpu1_avg_pwr_w": 104.8,
+    "gpu0_peak_temp_c": 48.0,
+    "gpu1_peak_temp_c": 49.0,
+    "gpu0_avg_temp_c": 44.6,
+    "gpu1_avg_temp_c": 44.0,
+    "gpu0_avg_pwr_w": 114.5,
+    "gpu1_avg_pwr_w": 93.9,
     "gpu0_limit_w": 140.0,
     "gpu1_limit_w": 140.0,
-    "samples_count": 34
+    "samples_count": 27
   }
 }

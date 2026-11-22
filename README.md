@@ -10,10 +10,10 @@ Turning passively-cooled datacenter **NVIDIA Tesla V100 PCIe 32GB (`sm_70` Volta
 
 | Metric | Stock / Unoptimized | With `Dualv100AwesomeSetup` | Why It Matters |
 | :--- | :--- | :--- | :--- |
-| **Idle GPU Power & Temp** | ~45–55W/card, 55°C+ | **~24–28W/card (135 MHz Eco Mode), 38–42°C** | Automatic 120s idle clock-down (`v100-thermal-guard.py`) + **120mm radial fan @ 25%** |
-| **Sustained Load Temp** | 78°C–85°C+ (thermal throttling / loud fans) | **52°C–55°C** (+23°C to +26°C safety margin!) | **120mm radial fan @ only 25%** + [Custom 3D-Printed Dual Fan Duct](hardware/fan-duct/) + 140W–150W cap |
-| **111GB MoE Model (`UD-Q4_K_XL`)** | Heavy UPI cross-socket bottleneck / OOM | **77.7 tok/s single** (84.4 decode peak) / **93.6 tok/s parallel** | Strata v0.2.19 (`0.1.65` `sm_70` port) + Socket-1 NUMA + 40 GiB RAM cache + Batch MTP |
-| **GPU 1 Thermal Balance (`UD-Q4_K_XL` vs `IQ3_XXS`)** | GPU 1 hits **66–74°C** @ ~130W (`IQ3_XXS`) | **GPU 1 drops to 52–61°C @ ~82–105W (up to 22°C cooler!)** | Hybrid VRAM+RAM tiering shifts GPU 1 duty cycle, keeping the hotter PCIe slot **14–22°C cooler** while delivering 4-bit quality |
+| **Idle GPU Power & Temp** | ~45–55W/card, 55°C+ | **~24–26W/card (135 MHz Eco Mode), 38°C** | Automatic 120s idle clock-down (`v100-thermal-guard.py`) + **120mm radial fan @ 25%** |
+| **Sustained Load Temp** | 78°C–85°C+ (thermal throttling / loud fans) | **46°C–49°C** (+28°C to +31°C safety margin!) | **120mm radial fan @ only 25%** + [Custom 3D-Printed Dual Fan Duct](hardware/fan-duct/) + 140W cap |
+| **111GB MoE Model (`UD-Q4_K_XL`)** | Heavy UPI cross-socket bottleneck / OOM | **84.4 tok/s single** (81.3 avg) / **93.6 tok/s parallel decode** | Strata v0.2.19 (`0.1.65` `sm_70` port) + `SPLIT_CPU_SHARE` + Socket-1 NUMA + Batch MTP |
+| **GPU 1 Thermal Balance (`UD-Q4_K_XL` vs `IQ3_XXS`)** | GPU 1 hits **66–74°C** @ ~130W (`IQ3_XXS`) | **GPU 1 drops to 45–49°C @ ~94W (up to 25°C cooler!)** | Hybrid VRAM+RAM tiering + 25% radial fan keeps the hotter PCIe slot **17–25°C cooler** while delivering 4-bit quality |
 | **64GB All-in-VRAM (`IQ3_XXS` / `IQ3_S`)** | ~52.8 tok/s @ 74°C | **63.6 tok/s** (68.8 peak) @ 61–65°C | `spec=3` MTP draft decoding + `int8` KV cache (up to 131k context) |
 | **CUDA 13 Cutoff Bypass (`sm_70` Port)** | Dropped in CUDA 13 (`CUBLAS_STATUS_ARCH_MISMATCH`) | **Full 2026 Strata feature parity on `engine-cuda12`** | CUDA 12.9 + `-DSTRATA_EXPERIMENTAL_SM60=ON` + custom Volta `mma.m8n8k4` Tensor Core kernels |
 | **Base System Idle (CPU + RAM)** | High dual-Xeon idle draw | **~24–28W CPU (both sockets) / ~45–55W wall** | `cpu-eco-profile.service` (`powersave` + `balance_performance` EPP) |
@@ -126,22 +126,16 @@ A zero-dependency Python web dashboard on port `9000` that monitors:
 
 ---
 
-## Benchmark Progression Log (Most Recent First)
+## Benchmark Progression Log (Best Run of Each Day, Most Recent First)
 
 Full benchmark progression across Strata `sm_70` engine versions, cooling duct revisions, power caps, NUMA pinning, and Volta kernel flags:
 
-| Date | Profile / Power Cap | Model | Avg Throughput | GPU 0 Peak | GPU 1 Peak | Avg Power (GPU 0 / 1) | Notes |
+| Date | Profile / Power Cap | Model | Best Throughput of the Day | GPU 0 Peak | GPU 1 Peak | Avg Power (GPU 0 / 1) | Notes |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Nov 22** | **140W/140W, 2× Concurrent Streams (`0.1.65`)** | **`qwen3.8-flash-next-ud-q4_k_xl` (111GB)** | **87.5 tok/s agg E2E (90.0 E2E / 93.6 decode peak)** | **54.0°C** | **55.0°C** | **102.0W / 104.2W** | **46.8 tok/s decode per stream**, **70.5% MTP draft accept** (92.1 rows/s), **99.9–100% VRAM hit** |
-| **Nov 22** | **140W/140W, Strata v0.2.19 (`0.1.65` `sm_70` port)** | **`qwen3.8-flash-next-ud-q4_k_xl` (111GB)** | **77.7 tok/s avg (82.0 E2E / 84.4 decode peak)** | **53.0°C** | **52.0°C** | **129.6W / 105.6W** | Native K-quant kernels + `STRATA_AUX_CPUS=auto`, 97.3–98.4% VRAM hit, **0 MB SSD reads** |
-| Nov 05 | 150W/150W, **2× Concurrent Streams** | `qwen3.8-flash-next-ud-q4_k_xl` (111GB) | **61.9 tok/s agg (64.6 peak)** | 70.0°C | 61.0°C | ~130W / ~85W | 31.1 tok/s per stream, 67.1% MTP draft accept |
-| Nov 05 | 150W/150W, `--adapt-async 1 --batch-mtp` | `qwen3.8-flash-next-ud-q4_k_xl` (111GB) | **51.0 tok/s (56.6 peak)** | 69.0°C | 61.0°C | 122.4W / 81.9W | Single-stream with async expert adaptation |
-| Oct 26 | 150W/150W, NUMA1 + 3072 chunk | `qwen3.8-flash-next-ud-q4_k_xl` (111GB) | 44.1 tok/s (46.9 peak) | 59.0°C | 52.0°C | ~130W / ~95W | Socket 1 NUMA pin + 3072 prefill chunking |
-| Oct 26 | 150W/120W, Volta-Opt | `qwen3.8-flash-next-ud-q4_k_xl` (111GB) | 43.1 tok/s (45.7 peak) | 59.0°C | 50.0°C | ~125W / ~75W | 111GB Unsloth Q4 + 40GB RAM budget + `SM70` flags |
-| Oct 25 | 170W Cap, `spec=3` | `qwen3.8-flash-next-iq3_xxs` | **63.6 tok/s (68.8 peak)** | 61.0°C | 65.0°C | ~128W avg | Optimal all-in-VRAM 64GB profile |
-| Oct 25 | 155W Cap, `spec=3` | `qwen3.8-flash-next-iq3_xxs` | 62.9 tok/s (68.1 peak) | 61.0°C | 66.0°C | 114.2W / 130.2W | Lowering MTP spec 4 -> 3 = faster & cooler |
-| Oct 25 | 150W Cap (New Quiet Duct) | `qwen3.8-flash-next-iq3_xxs` | 59.3 tok/s | 59.0°C | 64.0°C | ~112W total | Redesigned quiet duct (-10°C cooler!) |
-| Oct 25 (Baseline) | 160W Cap (Old Duct) | `qwen3.8-flash-next-iq3_xxs` | ~52.8 tok/s | 68.0°C | 74.0°C | ~140W total | Original duct, loud fan curve |
+| **2026-11-22** | **140W/140W, Strata v0.2.19 (`0.1.65` `sm_70` + 120mm Radial Fan @ 25%)** | **`qwen3.8-flash-next-ud-q4_k_xl` (111GB)** | **93.6 tok/s parallel decode (90.0 E2E)** / **84.4 tok/s single decode (81.3 avg)** | **48.0°C** | **49.0°C** | **114.5W / 93.9W** | `SPLIT_CPU_SHARE=1` + `MMQ_TIER_SORT=1`, **0.18s warm TTFT**, **99.9–100% VRAM hit**, **48–49°C peak @ 25% radial fan!** |
+| **2026-11-05** | 150W/150W, Strata v0.2.10 (`0.1.56`, `--adapt-async 1 --batch-mtp`) | `qwen3.8-flash-next-ud-q4_k_xl` (111GB) | **61.9 tok/s parallel (64.6 peak)** / **51.0 tok/s single (56.6 peak)** | 70.0°C | 61.0°C | 122.4W / 81.9W | Async expert adaptation + 2 parallel streams (31.1 tok/s per stream, 67.1% MTP draft accept) |
+| **2026-10-26** | 150W/150W, NUMA Node 1 + Volta-Opt + 3072 Prefill Chunk | `qwen3.8-flash-next-ud-q4_k_xl` (111GB) | **44.1 tok/s avg (46.9 peak)** | 59.0°C | 52.0°C | ~130W / ~95W | First 111GB Unsloth Q4 run with Socket-1 NUMA pin + 40GB RAM budget + `STRATA_SM70_TABLE=1` |
+| **2026-10-25** | 170W Cap, `spec=3`, New Quiet Duct | `qwen3.8-flash-next-iq3_xxs` (47GB) | **63.6 tok/s avg (68.8 peak)** | 61.0°C | 65.0°C | ~128W avg | Best all-in-VRAM 64GB profile: redesigned quiet duct + MTP `spec=3` cut temps from 74°C -> 65°C |
 
 ---
 
